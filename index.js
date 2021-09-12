@@ -3,14 +3,12 @@ const app = express();
 const mongoose = require('mongoose');
 require('dotenv').config()
 
-const { MONGO_URI } = process.env;
-const { API_PORT } = process.env;
-const port = process.env.PORT || API_PORT;
+const port = process.env.PORT || process.envAPI_PORT;
 
 // Routes 
 const userRoutes = require('./routes/user');
 
-mongoose.connect(MONGO_URI,
+mongoose.connect(process.env.MONGO_URI,
     {
         useNewUrlParser: true,
         useUnifiedTopology: true

@@ -9,6 +9,11 @@ const isLoggedIn = require("../isLoggedIn");
 // Create TOKEN_KEY
 // require('crypto').randomBytes(64).toString('hex')
 
+// Get user details
+router.get('/user', isLoggedIn, async (req, res) => {
+    res.status(200).send(req.user);
+})
+
 // Get the favourite movies
 router.get('/user/:uid/favourite', async (req, res) => {
     const user = await User.findById(req.params.uid);
@@ -105,7 +110,7 @@ router.post("/user/login", async(req, res) => {
             // Set cookies
             res.cookie('jsonwebtoken', accessToken, {
                 expires: new Date(Date.now() + 60000),
-                httpOnly: false
+                httpOnly: true
             });
             // return res.status(200).send("Login Successfully.");
             return res.send(user);
@@ -117,14 +122,5 @@ router.post("/user/login", async(req, res) => {
         res.status(400).send(`Registration Failed!`);
     }
 });
-
-router.get('/user/logout', (req, res) => {
-    try {
-        res.clearCookie('jsonwebtoken')
-        res.status(200).send('Logout Successful...')
-    } catch (err) {
-        console.log(err);
-    }
-})
 
 module.exports = router;
