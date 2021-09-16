@@ -8,7 +8,9 @@ const isLoggedIn = async(req, res, next) => {
         const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1];
         
         if (token) {
-            return res.status(401).send('Authentication required!');
+            return res.status(401).json({
+                error:'Authentication required!'
+            });
         }
         const verifyToken = jwt.verify(token, process.env.TOKEN_KEY);
 
@@ -18,13 +20,11 @@ const isLoggedIn = async(req, res, next) => {
             throw new Error('User not found.');
         }
 
-        req.token = token;
-        req.rootUser = rootUser;
-        req._id = rootUser._id;
-
         next();
     } catch (error) {
-        res.status(401).send('Authentication required!');
+        res.status(401).json({
+            error: 'Authentication required!'
+        });
         console.log(error);
     }
 };

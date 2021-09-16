@@ -9,11 +9,6 @@ const isLoggedIn = require("../isLoggedIn");
 // Create TOKEN_KEY
 // require('crypto').randomBytes(64).toString('hex')
 
-// Get user details
-router.get('/user', isLoggedIn, async (req, res) => {
-    res.status(200).send(req.user);
-})
-
 // Get the favourite movies
 router.get('/user/:uid/favourite', async (req, res) => {
     const user = await User.findById(req.params.uid);
@@ -27,10 +22,10 @@ router.post('/user/:uid/favourite/:mid', async (req, res) => {
 
         user.favourite.push(req.params.mid);
         await user.save();
-        res.send();
+        res.send(user.favourite);
     }
     catch (e) {
-        res.send();
+        console.log(e);
     }
 });
 
@@ -39,7 +34,8 @@ router.delete('/user/:uid/favourite/:mid', async (req, res) => {
     try {
         const { uid, mid } = req.params;
         await User.findByIdAndUpdate(uid, { $pull: { favourite: mid } })
-        res.send();
+        const user = await User.findById(req.params.uid);
+        res.send(user.favourite);
     } catch (r) {
         console.log(e);
     }
@@ -54,15 +50,19 @@ router.post("/user/signup", async(req, res) => {
 
         // Validate user input
         if (!(email && password && username)) {
-            return res.status(400).send("All fields is required!");
+            return res.status(400).json({
+                error: 'All fields are required.'
+            });
         }
 
-        // check if user already exist
-        // Validate if user exist in our database
+        // check if user already exist in our database
+        // Validate if user exist 
         const oldUser = await User.findOne({ email });
 
         if (oldUser) {
-            return res.status(409).send("User Already Exist. Please Login!");
+            return res.status(409).json({
+                error: 'User Already Exist. Please Login!'
+            });
         }
 
         //Encrypt user password
@@ -71,16 +71,20 @@ router.post("/user/signup", async(req, res) => {
 
         // Create user in our database
         const user = await User.create({
-            username: username.charAt(0).toUpperCase() + username.slice(1),
+            username: username,
             email: email.toLowerCase(), // sanitize: convert email to lowercase
             password: encryptedPassword
         });
 
-        res.status(200).send(`Registration Successful! -> ${username}`);
+        res.status(200).json({
+            success: 'Registration Successful :)'
+        });
     }
     catch (err) {
         console.log(err);
-        res.status(400).send(`Registration Failed!`);
+        res.status(400).json({
+            error: 'Registration Failed!'
+        });
     }
 
 });
@@ -94,32 +98,35 @@ router.post("/user/login", async(req, res) => {
 
         // Validate user input
         if (!(email && password)) {
-            return res.status(400).send("All fields is required!");
+            return res.status(400).json({
+                error: 'All fields are required.'
+            });
         }
         // Validate if user exist in our database
         const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.password))) {
             // Create token
-            const accessToken = jwt.sign({ _id: user._id }, process.env.TOKEN_KEY);
+            const accessToken = jwt.sign({ _id: user._id, username: user.username }, process.env.TOKEN_KEY);
 
             // save user token
             user.token = accessToken;
             user.save();
 
-            // Set cookies
-            res.cookie('jsonwebtoken', accessToken, {
-                expires: new Date(Date.now() + 60000),
-                httpOnly: true
+            return res.status(200).json({
+                success: 'Login Successful :)',
+                token: accessToken
             });
-            // return res.status(200).send("Login Successfully.");
-            return res.send(user);
         }
-        res.status(400).send("Invalid Credentials");
+        res.status(401).json({
+            error:'Invalid Credentials :('
+        });
     }
     catch (err) {
         console.log(err);
-        res.status(400).send(`Registration Failed!`);
+        res.status(400).json({
+            error:'Login Failed!'
+        });
     }
 });
 
